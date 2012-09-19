@@ -1,0 +1,576 @@
+<?PHP
+/*<LLM_CONFIG_1>*/
+$articles_extension = 'html';
+/*</LLM_CONFIG_1>*/
+
+//инициализация
+$request       = $_SERVER['REQUEST_URI'];
+$template_file = str_replace("php","html",basename(__FILE__));
+$base_file     = str_replace("php","txt",basename(__FILE__));
+$articles_directory = basename(dirname(__FILE__));
+
+if (!defined('_LLM_DOMAIN_KEY')){
+	
+	define('_LLM_DOMAIN_KEY', str_replace(".txt","",$base_file));
+}
+
+class LLM_templater {
+
+	function LLM_templater($data) {
+	
+		$this->data = $data;
+		$this->main_template = $data->tpl_page;
+	}
+	
+	function r($k,$v) {
+	
+		$this->main_template = str_replace("{".$k."}",$v,$this->main_template);
+	}
+
+	function r2($k,$v,& $in) {
+	
+		$in = str_replace("{".$k."}",$v,$in);
+	}
+	
+	function getT($tpl) {
+	
+		return $this->data->$tpl;
+	}
+	
+	function out($art_client) {
+
+		//linksuite работает в cp1251
+		$out_charset = isset($art_client->articles[0]->charset) ? $art_client->articles[0]->charset : "CP1251";
+		
+		echo iconv("CP1251",$out_charset,$this->main_template);
+	}
+}
+
+//класс дублируем, так как в общем случае имя директории с файлом llm.php
+//не известно и можно менять как угодно
+class LLM_art_client extends LLM_art_base {
+
+	/*<LLM_CONFIG_2>*/
+	var $_llm_main_host     = 'localhost';
+	var $_llm_main_uri      = 'llm-client';
+	/*</LLM_CONFIG_2>*/
+    
+    // [file_get_contents|curl|socket]
+    var $_fetch_remote_type = '';
+    
+    //сделайте true если ничего не работает
+    var $_debug             = false;
+
+    /**
+    * Тут возможны ошибки - инициализируемся через родителя
+    */
+    function LLM_art_client($base) {
+
+    	$this->articles = array();
+    	
+        $this->load_data($base);
+        
+        foreach($this->articles as $k => $art) {
+        
+        	$this->articles[$k]->sef_url = ($art->category ? $this->makeCleanUrl($art->category)."/" : "" ).$this->makeCleanUrl($art->title);
+        }
+    }
+    
+    /**
+    * Делаем англоязычный адрес для заголовка статьи
+    */
+    function makeCleanUrl($title) {
+    
+    	$r = array("а" => "a", "б" => "b", "в" => "v", "г" => "g", "д" => "d", "е" => "e", "ё" => "e", "ж" => "j", "з" => "z", "и" => "i", "й" => "i", "к" => "k", "л" => "l", "м" => "m", "н" => "n", "о" => "o", "п" => "p", "р" => "r", "с" => "s", "т" => "t", "у" => "u", "ф" => "f", "х" => "h", "ц" => "c", "ч" => "ch", "ш" => "sh", "щ" => "sh", "ъ" => "", "ы" => "i", "ь" => "", "э" => "e", "ю" => "yu", "я" => "ya", "А" => "A", "Б" => "B", "В" => "V", "Г" => "G", "Д" => "D", "Е" => "E", "Ё" => "E", "Ж" => "G", "З" => "Z", "И" => "I", "Й" => "I", "К" => "K", "Л" => "L", "М" => "M", "Н" => "N", "О" => "O", "П" => "P", "Р" => "R", "С" => "S", "Т" => "T", "У" => "U", "Ф" => "F", "Х" => "H", "Ц" => "C", "Ч" => "CH", "Ш" => "Sh", "Щ" => "sH", "Ъ" => "", "Ы" => "I", "Ь" => "", "Э" => "E", "Ю" => "Yu", "Я" => "Ya", " " => "-");
+    	
+    	for($ret = '', $i=0;$i<strlen($title);$i++) {
+    	
+    		$ret .= str_replace(array_keys($r),array_values($r),$title{$i});
+    	}
+
+    	$ret = urlencode($ret);
+    	$ret = preg_replace("|\%[a-z0-9][a-z0-9]|si","",$ret);//с этими штуками, типа %3F урл смотрится не красиво
+    	$ret = preg_replace("|[-]+|si","-",$ret);//двойные минусы (пробелы)
+    	$ret = preg_replace("|-$|","",$ret);//если минус в конце, то это не красиво
+    	
+    	return $ret;
+    }
+    
+    /**
+    * Список доступных категорий во всех статьях
+    */
+    function getCategoriesList() {
+    
+    	$cats = array();
+    	
+    	foreach($this->articles as $art) {
+    	
+    		if (!in_array($art->category,$cats) && $art->category!="") $cats[] = $art->category;
+    	}
+    	
+    	return $cats;
+    }
+    
+    /**
+    * Список статей с разбивкой на страницы
+    */
+    function showArticlesList($show_articles, $start_from, $templater, $link_template) {
+    
+    	global $articles_directory, $articles_extension;
+    	
+    	$per_page = $templater->getT("tpl_articles_per_page");
+		$list_sz = sizeof($show_articles);
+	    $start = $start_from > $list_sz ? 0 : $start_from;
+	    $end   = $start_from + $per_page > $list_sz ? $list_sz : $start_from + $per_page;
+	    // ---- конец разбивки на страницы
+	    
+		//на главной буду только статьи с пустой категорией
+		$elements = array();
+		for($i=$start;$i<$end;$i++) {
+		
+			$article = $show_articles[$i];
+			$element = $templater->getT("tpl_articles_listing_element");
+			$templater->r2("ARTICLE_LINK","<a href='/{$articles_directory}/{$article->sef_url}.{$articles_extension}'>{$article->title}</a>",$element);
+			@list($intro,$full) = explode("<cut>",$article->content);
+			$templater->r2("ARTICLE_CONTENT",$intro,$element);
+			
+			//замена картинок
+			$element = str_replace("{image}",$article->image ? "<img src='/{$articles_directory}/images/{$article->image}' align='left' border=0 />" : "",$element);
+					
+			$elements[] = $element;
+		}
+		
+		$all_elements = $templater->getT("tpl_articles_listing");
+		$templater->r2("ARTICLES_ELEMENTS",implode("",$elements),$all_elements);
+		
+		//---- вставка разбивки на страницы
+		$page_select = "";
+		if ($list_sz < $per_page) {
+		
+			$page_select = "";
+		}
+		else {
+		
+			$page_count = ceil($list_sz/$per_page);
+			$links = '';
+			for ($i=1;$i<=$page_count;$i++) {
+			
+				$startfrom_val = ($i-1)*$per_page;
+				$href = str_replace("{START_FROM}", ($startfrom_val!=0 ? "-".$startfrom_val : ""), $link_template);
+				if ($startfrom_val == 0) $href = dirname($href).'/';
+				if ($startfrom_val != $start_from) $links .= "&nbsp;<a href='{$href}'>[&nbsp;$i&nbsp;]</a>&nbsp;&nbsp;";
+					else $links .= "&nbsp;<span>{$i}</span>&nbsp;&nbsp;";
+			}
+			$page_select .= $links;
+		}
+		// ---- конец вставки
+		
+		$templater->r2("PAGESWITCH",$page_select,$all_elements);
+		
+		return $all_elements;
+    }
+}
+class LLM_art_base {
+
+    var $_version           = '1';
+    var $_cache_lifetime    = 43200;//3600*12 - то есть 12 часов
+    var $_f_cache_lifetime  = 86400;//для картинок кэш дольше
+	var $_cache_reloadtime  = 600;
+	
+    /**
+    * Рисовалка и скрывалка ошибок
+    */
+    function showError($msg) {
+    
+    	if ($this->_debug) {
+    	
+    		echo "[[{$msg}]]";
+    	}
+    	else {
+    	
+    		echo "[error]";
+    	}
+    }
+    
+    /**
+    * Функция чтения файла по сети, содрал с сапы.
+    */
+    function get_file($host, $path) {
+
+        @ini_set('allow_url_fopen',          1);
+        @ini_set('default_socket_timeout',   6);
+			
+        if (
+            $this->_fetch_remote_type == 'file_get_contents'
+            ||
+            (
+                $this->_fetch_remote_type == ''
+                &&
+                function_exists('file_get_contents')
+                &&
+                ini_get('allow_url_fopen') == 1
+            )
+        ) {
+			$this->_fetch_remote_type = 'file_get_contents';
+            if ($data = @file_get_contents('http://' . $host . $path)) {
+                return $data;
+            }
+
+        } elseif (
+            $this->_fetch_remote_type == 'curl'
+            ||
+            (
+                $this->_fetch_remote_type == ''
+                &&
+                function_exists('curl_init')
+            )
+        ) {
+        	
+			$this->_fetch_remote_type = 'curl';
+            if ($ch = @curl_init()) {
+                @curl_setopt($ch, CURLOPT_URL,              'http://' . $host . $path);
+                @curl_setopt($ch, CURLOPT_HEADER,           false);
+                @curl_setopt($ch, CURLOPT_RETURNTRANSFER,   true);
+                @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,   $this->_socket_timeout);
+                @curl_setopt($ch, CURLOPT_USERAGENT,        $user_agent);
+
+                if ($data = curl_exec($ch)) {
+                	
+                    return $data;
+                }
+                
+                @curl_close($ch);
+            }
+
+        } else {
+			$this->_fetch_remote_type = 'socket';
+            $buff = '';
+            $fp = @fsockopen($host, 80, $errno, $errstr, $this->_socket_timeout);
+            if ($fp) {
+                @fputs($fp, "GET {$path} HTTP/1.0\r\nHost: {$host}\r\n");
+                @fputs($fp, "User-Agent: rIyIIIuCTA9I-H9IMKA\r\n\r\n");
+                while (!@feof($fp)) {
+                    $buff .= @fgets($fp, 128);
+                }
+                @fclose($fp);
+
+                $page = explode("\r\n\r\n", $buff);
+
+                return $page[1];
+            }
+
+        }
+
+        return null;
+    }
+
+    /*
+     * Функция чтения из локального файла
+     */
+    function _read($filename) {
+
+        $fp = @fopen($filename, 'rb');
+        @flock($fp, LOCK_SH);
+        if ($fp) {
+            clearstatcache();
+            $length = @filesize($filename);
+            $mqr = get_magic_quotes_runtime();
+            set_magic_quotes_runtime(0);
+            if ($length) {
+                $data = @fread($fp, $length);
+            } else {
+                $data = '';
+            }
+            set_magic_quotes_runtime($mqr);
+            @flock($fp, LOCK_UN);
+            @fclose($fp);
+
+            return $data;
+        }
+
+        return null;
+    }
+
+    /*
+     * Функция записи в локальный файл
+     */
+    function _write($filename, $data) {
+
+        $fp = @fopen($filename, 'wb');
+        if ($fp) {
+            @flock($fp, LOCK_EX);
+            $length = strlen($data);
+            @fwrite($fp, $data, $length);
+            @flock($fp, LOCK_UN);
+            @fclose($fp);
+
+            if (md5($this->_read($filename)) != md5($data)) {
+                return null;
+            }
+
+            return true;
+        }
+
+        return null;
+    }    
+
+    /**
+    * Грузим что-то там
+    */
+    function load_data($file) {
+    	
+    	//где храним ссылки
+        $this->_db_file = $file;
+        
+        // Пытаемся создать файл.
+        if (!is_file($this->_db_file)) {
+            if (@touch($this->_db_file)) {
+                @chmod($this->_db_file, 0666);
+            } else {
+            	
+            	$this->showError("Cannot touch {$this->_db_file}");
+                return null;
+            }
+        }
+        
+		//можем ли до сих пор в него писать
+        if (!is_writable($this->_db_file)) {
+        	$this->showError("{$this->_db_file} is unwriteable");
+            return null;
+        }
+
+        @clearstatcache();
+
+        //попытка не умирать если нет соединения с донором
+        $is_error = false;
+
+        //а тут загружаем с нашего сервера ссылки для этого домена
+        if (filemtime($this->_db_file) < (time()-$this->_cache_lifetime) || filesize($this->_db_file) == 0) {
+
+            @touch($this->_db_file, (time() - $this->_cache_lifetime + $this->_cache_reloadtime));
+
+            //REQUEST_URI запроса ссылок к нашему крутому серверу, раздаюущему ссылки для конкретной страницы
+            $req_uri = "/".$this->_llm_main_uri.'/get.php?type=article&domain_key='._LLM_DOMAIN_KEY;
+            $data = $this->get_file($this->_llm_main_host,$req_uri);
+            
+            if ($data === null) {
+            	$this->showError("NULL answer from llm-client");
+            	
+            	$is_error = true;
+            }
+            
+            //ловим LERROR:
+            $pos = strpos($data,"LERROR:");
+            
+            if ($pos !== false && !$is_erorr) {
+            	$this->showError("llm-client send error [$data]");
+            	
+            	$is_error = true;
+            }
+
+            //если ошибок нет, то записываем файл
+            $ret = !$is_error ? $this->_write($this->_db_file,base64_decode($data)) : NULL;
+            if ($ret === null && !$is_error) {
+            
+            	$this->showError("Write function return NULL");
+            	$is_error = true;
+            }
+        }
+
+        if (strlen(session_id())) {
+            $session = session_name() . '=' . session_id();
+            $this->_request_uri = str_replace(array('?'.$session,'&'.$session), '', $this->_request_uri);
+        }
+
+        //считываем файл и в функции преобразуем в формат для непосредственной вставки
+        if ($data = $this->_read($this->_db_file)) {
+        	
+        	//если была ошибка и в файле ничего нет, то уходим, тут точно ничего нет
+        	if ($is_error && !$data) return NULL;
+        	
+        	$ret3 = $this->set_data(@unserialize($data));
+        	if ($ret3 !== true) {
+        	
+        		$this->showError("Links file is not an array");
+        		return null;
+        	}
+        }
+        else {
+        
+        	$this->showError("Cannot read {$this->_db_file}");
+        	return null;
+        }
+        
+        //если все хорошо, то уходим
+        return true;
+    }
+
+    function set_data($data){
+
+    	if (!is_array($data)) return false;
+    	//if (!$data) return false;
+    	
+    	$this->articles = $data;
+    	
+    	//качаем картинки
+    	foreach($this->articles as $one_art) {
+    	
+    		if ($one_art->image) {
+    		
+    			$image_in_dir = dirname(__FILE__).'/images/'.$one_art->image;
+    			
+    			if (!file_exists($image_in_dir) || filemtime($this->_db_file) < (time()-$this->_f_cache_lifetime)) {
+    				
+	    			$req_uri = "/".$this->_llm_main_uri."/get.php?type=image&article_id={$one_art->id}&domain_key="._LLM_DOMAIN_KEY;
+	    			$i_data = $this->get_file($this->_llm_main_host,$req_uri);
+	    			
+	    			if ($i_data == "" && $i_data == NULL) {
+	    			
+			        	$this->showError("Image {$one_art->image} has null size.");
+			        	return false;
+	    			}
+	    			
+	    			$f = fopen($image_in_dir,"w");fwrite($f,base64_decode($i_data));fclose($f);
+    			}
+    		}
+    	}
+    	
+    	return true;
+    }
+}
+// ------------------------------------------------------------------
+$templater  = new LLM_templater(unserialize(file_get_contents($template_file)));
+$art_client = new LLM_art_client($base_file);
+
+$PAGE_DESCRIPTION = $PAGE_KEYWORDS = "";
+
+//если имя статьи пусто - то значит, что запрашиваем индекс статей
+$real_request = str_replace("/{$articles_directory}/","",$request);
+$a = preg_match("|index(-[0-9]+)?.{$articles_extension}|",$real_request);
+//пустой запрос - редирект на index.html
+if($real_request == "") {
+
+	$PAGE_TITLE = $templater->getT("tpl_title_main");
+
+	$articles_count = $templater->getT("tpl_articles_per_page");
+	
+	//собираем в массив последние статьи
+	$show_articles = array();$cnt = 0;
+	foreach($art_client->articles as $art) {
+	
+		$show_articles[] = $art;
+		$cnt++;
+		if ($cnt >= $articles_count) break;
+	}
+
+	$start_from = 0;
+	$ARTICLES_AREA = $art_client->showArticlesList($show_articles, $start_from, $templater, "/{$articles_directory}/index{START_FROM}.{$articles_extension}");
+}
+else {//тут либо запрос категории, либо статьи
+
+	$sef_url = str_replace(".".$articles_extension,"",$real_request);$is_found = false;
+	foreach($art_client->articles as $article) {
+	
+		if ($article->sef_url == $sef_url) {
+		
+			$is_found = true;
+			break;
+		}
+	}
+
+	if (!$is_found) {//листинг категории
+	
+		//ищем факт обращения к категории
+		list($request_cat,$second_part) = explode("/",$real_request);
+		$categories = $art_client->getCategoriesList();$is_found = false;
+		foreach($categories as $cat) {
+		
+			if ($art_client->makeCleanUrl($cat) == $request_cat) {
+			
+				$is_found = true;
+				break;
+			}
+		}
+		
+		//найдена категория запроса
+		if ($is_found && ($second_part=="" || preg_match("|page(-(.*))\.{$articles_extension}|",$second_part))) {
+		
+			$real_cat = $cat;
+			
+			//определяем статьи к показу
+			$show_articles = array();
+			foreach($art_client->articles as $art) {
+			
+				if ($art->category == $real_cat) $show_articles[] = $art;
+			}
+			
+			preg_match("|.+page(-([0-9]+))?.{$articles_extension}|",$real_request,$mt);
+			if (isset($mt[2])) {
+			
+				$start_from = (int)$mt[2];
+			}
+			else $start_from = 0;
+			
+			$ARTICLES_AREA = $art_client->showArticlesList($show_articles, $start_from, $templater, "/{$articles_directory}/".$art_client->makeCleanUrl($real_cat)."/page{START_FROM}.{$articles_extension}");
+			
+			$PAGE_TITLE = $real_cat.' - '.$templater->getT("tpl_title_main");
+		}
+		else {
+		
+			//косяк?
+			header("HTTP/1.1 404 Not Found");
+			echo "404 - Not Found";
+			exit();
+		}
+	}
+	else {//тут точно - нашли статью
+	
+		$article_full = $templater->getT("tpl_articles_full");
+		$templater->r2("ARTICLE_TITLE",$article->title,$article_full);
+		@list($intro,$full) = explode("<cut>",$article->content);
+		$templater->r2("ARTICLE_CONTENT",$full,$article_full);
+		$ARTICLES_AREA = $article_full;
+		
+		$ARTICLES_AREA = str_replace("{image}",$article->image ? "<img src='/{$articles_directory}/images/{$article->image}' align='left' border=0 />" : "",$ARTICLES_AREA);
+		
+		$PAGE_TITLE       = $article->title.' - '.$templater->getT("tpl_title_main");
+		$PAGE_DESCRIPTION = $article->description;
+		$PAGE_KEYWORDS    = $article->keywords;
+	}
+}
+
+//блок с категориями
+$categories = $art_client->getCategoriesList();
+if(sizeof($categories) > 0) {
+
+	$cat_elements = array();
+	foreach($categories as $cat) {
+	
+		$cat_element = $templater->getT("tpl_categories_element");
+		$templater->r2("CATEGORY_LINK","<a href='/{$articles_directory}/".$art_client->makeCleanUrl($cat)."/'>{$cat}</a>",$cat_element);
+		
+		$cat_elements[] = $cat_element;
+	}
+
+	$cats_list = $templater->getT("tpl_categories_list");
+	$templater->r2("CATEGORIES_LIST",implode("",$cat_elements),$cats_list);
+	
+	$CATEGORIES_AREA = $cats_list;
+}
+else {
+
+	$CATEGORIES_AREA = "";
+}
+// --- конец блока с категориями
+
+//если не присвоили - то как в тайтле
+if ($PAGE_DESCRIPTION == "") $PAGE_DESCRIPTION = $PAGE_KEYWORDS = $PAGE_TITLE;
+
+$templater->r("ARTICLES_AREA"   ,$ARTICLES_AREA);
+$templater->r("CATEGORIES_AREA" ,$CATEGORIES_AREA);
+$templater->r("PAGE_TITLE"      ,$PAGE_TITLE);
+$templater->r("PAGE_DESCRIPTION",$PAGE_DESCRIPTION);
+$templater->r("PAGE_KEYWORDS"   ,$PAGE_KEYWORDS);
+
+$templater->out($art_client);
+?>

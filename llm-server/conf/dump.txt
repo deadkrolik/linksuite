@@ -1,0 +1,171 @@
+-- phpMyAdmin SQL Dump
+-- version 2.6.1
+-- http://www.phpmyadmin.net
+-- 
+-- Хост: localhost
+-- Время создания: Мар 21 2009 г., 18:30
+-- Версия сервера: 4.1.8
+-- Версия PHP: 5.1.4
+-- 
+-- БД: `llm`
+-- 
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `articles`
+-- 
+
+CREATE TABLE `articles` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `site_id` bigint(20) NOT NULL default '0',
+  `category` varchar(100) NOT NULL default '',
+  `time_add` bigint(20) NOT NULL default '0',
+  `time_end` bigint(20) NOT NULL default '0',
+  `title` varchar(255) NOT NULL default '',
+  `description` varchar(255) NOT NULL default '',
+  `keywords` varchar(255) NOT NULL default '',
+  `image` varchar(255) NOT NULL default '',
+  `content` blob NOT NULL,
+  `is_in_yandex_index` tinyint(4) NOT NULL default '0',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `categories`
+-- 
+
+CREATE TABLE `categories` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `name` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `links`
+-- 
+
+CREATE TABLE `links` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `html` varchar(255) NOT NULL default '',
+  `time_start` bigint(20) NOT NULL default '0',
+  `status` bigint(20) NOT NULL default '0',
+  `project_id` bigint(20) NOT NULL default '0',
+  `page_id` bigint(20) NOT NULL default '0',
+  `is_in_index` tinyint(4) NOT NULL default '0',
+  `is_in_google_index` tinyint(4) NOT NULL default '0',
+  `last_index_check` bigint(20) NOT NULL default '0',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `pages`
+-- 
+
+CREATE TABLE `pages` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `site_id` bigint(20) NOT NULL default '0',
+  `url` varchar(255) NOT NULL default '',
+  `links_on_page` tinyint(4) NOT NULL default '0',
+  `pr` tinyint(4) NOT NULL default '0',
+  `nesting` tinyint(4) NOT NULL default '0',
+  `external_links_count` bigint(20) NOT NULL default '0',
+  `time_last_index` bigint(20) NOT NULL default '0',
+  `url_hash` varchar(32) NOT NULL default '',
+  `status` tinyint(4) NOT NULL default '0',
+  `is_in_yandex_index` tinyint(4) NOT NULL default '0',
+  `is_in_google_index` tinyint(4) NOT NULL default '0',
+  `title` VARCHAR(255) NOT NULL,
+  PRIMARY KEY  (`id`),
+  KEY `url_hash` (`url_hash`),
+  KEY `site_id` (`site_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `projects`
+-- 
+
+CREATE TABLE `projects` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `name` varchar(255) NOT NULL default '',
+  `urls` longblob NOT NULL,
+  `parent_id` bigint(20) NOT NULL default '0',
+  `aurl` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `sites`
+-- 
+
+CREATE TABLE `sites` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `url` varchar(255) NOT NULL default '',
+  `links_on_main` tinyint(4) NOT NULL default '0',
+  `links_on_other` tinyint(4) NOT NULL default '0',
+  `links_delimiter` varchar(255) NOT NULL default '',
+  `pr` tinyint(4) NOT NULL default '0',
+  `cron_index` tinyint(4) NOT NULL default '0',
+  `last_index_time` bigint(20) NOT NULL default '0',
+  `domain_key` varchar(32) NOT NULL default '',
+  `cy` bigint(20) NOT NULL default '0',
+  `exclude_urls` blob NOT NULL,
+  `css_class` varchar(255) NOT NULL default '',
+  `category_id` bigint(20) NOT NULL default '0',
+  `charset` varchar(30) NOT NULL default '',
+  `is_ftp` tinyint(4) NOT NULL default '0',
+  `last_ftp_access` bigint(20) NOT NULL default '0',
+  `ftp_host` varchar(100) NOT NULL default '',
+  `ftp_user` varchar(100) NOT NULL default '',
+  `ftp_password` varchar(100) NOT NULL default '',
+  `ftp_dir` varchar(100) NOT NULL default '',
+  `articles_folder` varchar(100) NOT NULL default '',
+  `last_time_get_links` bigint(20) NOT NULL default '0',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `users`
+-- 
+
+CREATE TABLE `users` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `password` varchar(100) NOT NULL default '',
+  `user_group` varchar(255) NOT NULL default '',
+  `session_id` varchar(255) NOT NULL default '',
+  `username` varchar(30) NOT NULL default '',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;
+
+-- --------------------------------------------------------
+INSERT INTO `users` (`id`, `password`, `user_group`, `session_id`, `username`) 
+	VALUES (1, 'd965dca4b5:79e72b34df4d8956bc0f6ecd38df65fc', 
+	'ADMINISTRATOR', '', 'admin');
+
+-- --------------------------------------------------------
+
+-- 
+-- Структура таблицы `static_code`
+-- 
+	
+CREATE TABLE `static_code` (
+  `id` bigint(20) unsigned NOT NULL auto_increment,
+  `position_name` varchar(40) NOT NULL default '',
+  `content` blob NOT NULL,
+  `is_published` tinyint(4) NOT NULL default '0',
+  `show_on_sites` mediumblob NOT NULL,
+  `title` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=cp1251 ;

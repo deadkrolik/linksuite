@@ -1,0 +1,70 @@
+/* 
+	Chrome de la chrome table styles
+	written by Chris Heilmann http://wait-till-i.com
+*/
+
+table,th,td{
+	border:1px solid #fff;
+	border-collapse:collapse;
+}
+table{
+	border:none;
+	border-top:1px solid #000;
+}
+thead th{
+	background:url(greychrome.gif) top left repeat-x #fff;
+	padding:5px 10px;
+	font-size:90%;
+	text-transform:uppercase;
+	color:#333;
+}
+tbody td,tbody th{
+	font-size:100%;
+	/*padding:5px 10px;*/
+	padding:2px 2px 2px 5px ;
+	background:#eee;
+}
+tbody th{
+	background:url(bluechrome.gif) top left repeat-x #fff;
+	color:#333;
+}
+tbody tr.odd td{
+	background:#ddd;
+}
+tbody tr.odd th{
+	background:url(greenchrome.gif) top left repeat-x #fff;
+	color:#333;
+}
+tfoot td,tfoot th{
+	border:none;
+	padding-top:10px;
+}
+caption{
+	font-family:Tahoma;
+	text-align:left;
+	text-transform:uppercase;
+	font-size:130%;
+	padding:10px 0;
+	color:#036;
+}
+table a:link{
+	color:#369;
+}
+table a:visited{
+	color:#369;
+}
+table a:hover{
+	color:#000;
+	text-decoration:none;
+}
+table a:active{
+	color:#000;
+}
+
+td ul {
+
+	padding-left:30px;
+}
+
+tr.row1 td  { background-color: #ddd ; }
+tr.row0:hover td, tr.row1:hover td  { background-color: #ffd ; }

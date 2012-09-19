@@ -1,0 +1,8 @@
+<?php 
+     if (!defined('_LLM_DOMAIN_KEY')){
+        define('_LLM_DOMAIN_KEY', '{{{DOMAIN_KEY}}}'); 
+     }
+     require_once($_SERVER['DOCUMENT_ROOT'].'/llm-'._LLM_DOMAIN_KEY.'/llm.php'); 
+     $llm = new LLM_client();
+     echo $llm->return_links();
+?>

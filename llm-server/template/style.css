@@ -1,0 +1,166 @@
+* {
+    padding: 0;
+    margin: 0;
+} 
+
+body {
+    background: #fff;
+	font: .74em "Trebuchet MS" Verdana, Arial, sans-serif;
+	line-height: 1.5em; 
+}
+a {
+	color: #3B6EBF;
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+#wrap {
+margin: 20px auto;
+width: 924px;
+background: #fff url('images/midbg.jpg');
+background-repeat: repeat-y;
+}
+
+#top { 
+background: #fff url('images/topbg.jpg');
+height: 30px;
+}
+
+#content {
+padding: 0 40px 0 40px;
+}
+
+#bottom {
+
+background: #fff url('images/botbg.jpg');
+height: 30px;
+}
+
+
+.header {
+height: 50px;
+background: #85ACF7 url('images/hidr.jpg');
+}
+
+.header h1 { padding-left: 17px; padding-top: 15px; font-size: 22px; color: #FFF; }
+.header h1 a { font-size: 22px; color: #FFF; text-decoration: none;}
+.header h2 { padding-left: 17px; padding-top: 0px; font-size: 17px; color: #FFF; }
+
+.breadcrumbs { 
+    background: #F6F9FB; 
+	border-bottom: 1px solid #E1E1E1; 
+	padding: 5px;
+}
+.breadcrumbs2 { 
+    background: #F6F9FB; 
+	border-bottom: 1px solid #E1E1E1; 
+	padding: 5px;
+}
+
+ul {
+	padding: 5px 0 5px 15px;
+	margin:0;
+}
+
+li {
+	margin-bottom:5px;
+	list-style-type: square;
+}
+
+.middle {
+	float: left;
+	width: 95%;
+	margin: 0 10px;
+	padding: 1% 1%;
+	text-align: justify;
+}
+
+.middle h2 { color: #3B6EBF; font-size: 16px; margin-bottom: 10px; margin-top: 10px;}
+.right h2 { color: #3B6EBF; font-size: 14px; margin-top: 15px;}
+
+#clear {
+	display: block;
+	clear: both;
+	width: 100%;
+	height:1px;
+	overflow:hidden;
+}
+
+#footer {
+	text-align: center;
+	color: #666;
+padding:0 0 20px 0
+}
+
+input, textarea, select {
+
+	border: 1px solid #999;
+}
+
+input[type="checkbox"] {
+
+	border: 1px solid black;
+	width:  12px;
+	height: 12px;
+}
+
+/*заголовок таблицы в списке сайтов*/
+.sites-theader {
+
+	background-color:#3B6EBF;
+}
+
+/* активный пункт меню */
+.menu-active-item {
+
+	color:green;
+	text-decoration:underline;
+}
+a img  {border:0}
+.button-add { 	background: url(icons/sm/+.png) 2px 2px  no-repeat; padding:2px 0 2px 23px; color:#59810F; border:0; font-weight:bold; cursor:pointer}
+.save_project , .save{background: url(icons/sm/save.png) 2px 2px  no-repeat; padding:2px 0 2px 23px; color:#59810F; border:0; font-weight:bold; cursor:pointer}
+
+h3 {color: #666; margin:10px 0 }
+
+.error {	background: url(icons/alert.png) no-repeat;}
+a:link.delete , .delete {	background: url(icons/sm/delete.png) no-repeat; padding:2px 23px 2px 23px;margin:2px 0 0 0; color:red; white-space:nowrap}
+#home {	background: url(icons/home.png) no-repeat; padding:8px 0 8px 42px}
+
+#catlist {	background: url(icons/folder.png) no-repeat; padding:5px 0 5px 38px}
+#newcat {	background: url(icons/new-folder.png) no-repeat; padding:5px 0 5px 38px}
+
+#sites {	background: url(icons/sites.png) no-repeat; padding:6px 0 6px 42px}
+#newsite {	background: url(icons/addsite.png) no-repeat; padding:8px 0 8px 42px}
+#pageslist {background: url(icons/faq.png) no-repeat; padding:5px 0 5px 42px}
+#pageslist span {text-decoration:underline}
+
+#users {	background: url(icons/users.png) no-repeat; padding:6px 0 6px 38px}
+#adduser {	background: url(icons/newuser.png) no-repeat; padding:6px 0 6px 38px}
+
+
+.help {background: url(icons/sm/qmark.png) no-repeat; position:absolute;height:15px; width:15px;margin:0 0 0 5px; opacity:0.6 }
+a.help:hover {opacity:1}
+
+.plus {background: url(icons/sm/+.png) no-repeat; position:absolute;height:20px; width:20px;margin:0 0 0 5px; opacity:0.6 }
+a.plus:hover {opacity:1}
+.minus {background: url(icons/sm/_.png) no-repeat; position:absolute;height:20px; width:20px;margin:0 0 0 5px; opacity:0.6 }
+a.minus:hover {opacity:1}
+
+
+.sites-theader {color:#fff}
+.head td {border:0;background:#fff }
+.filter {text-align:right;}
+.alert {border:1px dotted red; color:red; font-weight:bold; background: url(icons/alert.png) 30px 5px no-repeat; padding:12px 0 8px 70px}
+.msg {border:1px dotted red; color:#333; font-weight:bold; background: url(icons/ok.png) 30px 5px no-repeat; padding:12px 0 8px 70px}
+
+table.head {border:0}
+#docs {background: url(icons/faq.png) no-repeat; padding:5px 0 5px 42px; }
+#files {background: url(icons/download.png) no-repeat; padding:5px 0 5px 42px; }
+#projects {background: url(icons/projects.png) no-repeat; padding:7px 0 7px 38px}
+#search {background: url(icons/search.png) no-repeat; padding:7px 0 7px 38px}
+
+.searchlink {	background: url(icons/sm/search.png) no-repeat; padding:2px 23px 2px 23px;margin:2px 0 0 0; color:#333; white-space:nowrap}  
+.searchContainer {text-align:center; padding:10px}

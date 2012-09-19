@@ -1,0 +1,7 @@
+DirectoryIndex {{{DOMAIN_KEY}}}.php
+RewriteEngine On
+RewriteBase /{{{ARTICLES_FOLDER}}}/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule (.*) {{{DOMAIN_KEY}}}.php
